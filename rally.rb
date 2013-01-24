@@ -15,7 +15,10 @@ config = YAML.load_file(ENV['HOME']+'/.rallyconf.yml')['rally']
 
 parser = OptionParser.new do |o|
     o.banner = "Usage: rally -[options] [rally id]"
-    o.on('-l', '--launch', 'Open user story or defect in web browser') do
+    o.on('-b', '--block', '(un)block the story/defect') do
+        action = :block
+    end
+    o.on('-l', '--launch', 'Open user story/defect in web browser') do
         action = :launch
     end
     o.on('-h', '--help', 'Print this help message') do
@@ -41,7 +44,7 @@ def connect_to_rally(rally_url, username, password)
     custom_headers = CustomHttpHeader.new
     custom_headers.name = 'Rally CRY'
     custom_headers.version = '0.1'
-    custom_headers.vendor = 'rallycry'
+    custom_headers.vendor = 'rallycri'
     begin
         return  RallyRestAPI.new(:username => username, :password => password, :base_url => baseurl, :http_headers => custom_headers)
     rescue => ex
@@ -55,14 +58,14 @@ def print_text(text)
 end
 
 def print_state(rally_story)
-	c = Term::ANSIColor
+    c = Term::ANSIColor
     states = {"D" => "Defined", "P" => "In Progress", "C" => "Completed", "A" => "Accepted"}
-	bg = c.on_green
-	state_string = ""
+    bg = c.on_green
+    state_string = ""
     ["D", "P", "C", "A"].each do |s|
-		bg = c.on_red if (rally_story.blocked == "true" && (states[s] == rally_story.schedule_state))
-    	state_string += bg + s
-    	bg = c.reset if (states[s] == rally_story.schedule_state)
+        bg = c.on_red if (rally_story.blocked == "true" && (states[s] == rally_story.schedule_state))
+        state_string += bg + s
+        bg = c.reset if (states[s] == rally_story.schedule_state)
     end
     return state_string + c.reset
 end    
@@ -86,6 +89,11 @@ if story
         puts
         puts c.bold('Project: ') + rally_story.project.name
         puts c.bold('State: ') + print_state(rally_story)
+    elsif action == :block
+        blocked = rally_story.blocked == "true"
+        r.update(rally_story, :blocked => !blocked)
+        block_state = blocked && c.cyan("unblocked") || c.red("blocked")
+        puts "#{block_state} #{type.to_s} #{rally_story.formatted_i_d}"
     else
         url = "#{config['url']}/#/detail/#{type.to_s}/#{rally_story.object_i_d}"
         puts "launching #{url}"
