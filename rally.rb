@@ -8,7 +8,10 @@ require 'extensions/kernel'
 require 'html2markdown'
 require 'term/ansicolor'
 
+@@message_file = "RALLY_MSG"
+
 action = :display
+text = nil
 story = nil
 c = Term::ANSIColor
 config = YAML.load_file(ENV['HOME']+'/.rallyconf.yml')['rally']
@@ -17,6 +20,10 @@ parser = OptionParser.new do |o|
     o.banner = "Usage: rally -[options] [rally id]"
     o.on('-b', '--block', '(un)block the story/defect') do
         action = :block
+    end
+    o.on('-n note', '--notes note', 'append text to notes') do |note|
+        action = :notes
+        text = note
     end
     o.on('-l', '--launch', 'Open user story/defect in web browser') do
         action = :launch
@@ -57,9 +64,9 @@ def print_text(text)
     puts text.gsub(/\n/, "\n\n").gsub(/(.{1,#{line_width}})(\s+|$)/, "\\1\n")
 end
 
-def print_state(rally_story)
+def printable_state(rally_story)
     c = Term::ANSIColor
-    states = {"D" => "Defined", "P" => "In Progress", "C" => "Completed", "A" => "Accepted"}
+    states = {"D" => "Defined", "P" => "In-Progress", "C" => "Completed", "A" => "Accepted"}
     bg = c.on_green
     state_string = ""
     ["D", "P", "C", "A"].each do |s|
@@ -69,6 +76,17 @@ def print_state(rally_story)
     end
     return state_string + c.reset
 end    
+
+def prompt_for_text
+    editor = IO.popen("git config --get core.editor") { |io|  io.first.strip }
+    system(editor, @@message_file)
+    if File.exists?(@@message_file)
+        message = File.read(@@message_file)
+        File.delete(@@message_file)
+        return message
+    end
+    return nil
+end
 
 if story
     r = connect_to_rally(config['url'], config['username'], config['password'])
@@ -86,14 +104,25 @@ if story
             desc = HTMLPage.new :contents => rally_story.description
             print_text(desc.markdown)
         end
-        puts
         puts c.bold('Project: ') + rally_story.project.name
-        puts c.bold('State: ') + print_state(rally_story)
+        puts c.bold('State: ') + printable_state(rally_story)
     elsif action == :block
         blocked = rally_story.blocked == "true"
-        r.update(rally_story, :blocked => !blocked)
+        # text = prompt_for_text
+        text = "TODO: implement external text editing"
         block_state = blocked && c.cyan("unblocked") || c.red("blocked")
-        puts "#{block_state} #{type.to_s} #{rally_story.formatted_i_d}"
+        if text
+            r.update(rally_story, :blocked => !blocked)
+            puts "#{block_state} #{type.to_s} #{rally_story.formatted_i_d}"
+        else
+            puts "Aborting block change due to empty message"
+            # notes = HTMLPage.new :contents => rally_story.notes
+            # puts notes.markdown
+            # TODO: add/replace message and convert back to html
+        end
+    elsif text
+        r.update(rally_story, action => rally_story.notes + text)
+        puts "added notes"
     else
         url = "#{config['url']}/#/detail/#{type.to_s}/#{rally_story.object_i_d}"
         puts "launching #{url}"
