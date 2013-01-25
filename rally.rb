@@ -20,12 +20,14 @@ parser = OptionParser.new do |o|
     o.on('-b', '--block', '(un)block the story/defect') do
         action = :block
     end
-    o.on('-n note', '--notes note', 'append text to notes') do |note|
+    o.on('-n', '--notes', 'append text to notes') do
         action = :notes
-        text = note
     end
-    o.on('-l', '--launch', 'Open user story/defect in web browser') do
+    o.on('-l', '--launch', 'open user story/defect in web browser') do
         action = :launch
+    end
+    o.on('-s s', '--story s', 'specify the user story number') do |s|
+        story = s.upcase
     end
     o.on('-h', '--help', 'Print this help message') do
         puts o
@@ -34,9 +36,10 @@ parser = OptionParser.new do |o|
 end
 parser.parse!
 
-if ARGV[0]
-    story = ARGV[0].upcase
-else
+
+text = ARGV[0]
+
+unless story
     # determine story id from the current git branch
     branch = IO.popen("git rev-parse --abbrev-ref HEAD") { |io|  io.first.strip }
     story = /\b(?:US|us|DE|de)\d+\b/.match(branch)[0].upcase
@@ -48,7 +51,7 @@ def connect_to_rally(rally_url, username, password)
         baseurl = baseurl.slice(0, baseurl.length-1)
     end
     custom_headers = CustomHttpHeader.new
-    custom_headers.name = 'Rally CRY'
+    custom_headers.name = 'Rally CRI'
     custom_headers.version = '0.1'
     custom_headers.vendor = 'rallycri'
     begin
@@ -119,9 +122,14 @@ if story
             # puts notes.markdown
             # TODO: add/replace message and convert back to html
         end
-    elsif text
-        r.update(rally_story, action => rally_story.send(action.to_s) + "<br>" + text)
-        puts "added #{action.to_s}s"
+    elsif action == :notes
+        text ||= prompt_for_text
+        if text
+            r.update(rally_story, action => rally_story.send(action.to_s) + "<br>" + text)
+            puts "added #{action.to_s}"
+        else
+            puts "Aborting block change due to empty message"
+        end
     else
         url = "#{config['url']}/#/detail/#{type.to_s}/#{rally_story.object_i_d}"
         puts "launching #{url}"

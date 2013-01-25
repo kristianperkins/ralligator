@@ -26,7 +26,7 @@ your rally URL as well as your username and password, e.g.:
 Usage
 -----
 
-    rally -[options] [rally id]
+    rally [options]
 
 If operating within a git repository rallycri will attempt to find a rally ID
 in the current git branch name.
