@@ -78,7 +78,7 @@ def printable_state(rally_story)
 end    
 
 def prompt_for_text
-    editor = IO.popen("git config --get core.editor") { |io|  io.first.strip }
+    editor = IO.popen("git config --get core.editor") { |io|  io.first.strip } || "vi"
     system(editor, @@message_file)
     if File.exists?(@@message_file)
         message = File.read(@@message_file)
@@ -121,8 +121,8 @@ if story
             # TODO: add/replace message and convert back to html
         end
     elsif text
-        r.update(rally_story, action => rally_story.notes + text)
-        puts "added notes"
+        r.update(rally_story, action => rally_story.send(action.to_s) + "<br>" + text)
+        puts "added #{action.to_s}s"
     else
         url = "#{config['url']}/#/detail/#{type.to_s}/#{rally_story.object_i_d}"
         puts "launching #{url}"
