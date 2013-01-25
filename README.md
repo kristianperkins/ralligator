@@ -8,7 +8,7 @@ Installation
 
 Install dependancies:
 
-    gem install rally_rest_api launchy extensions html2markdown term-ansicolor
+    gem install rally_rest_api launchy html2md term-ansicolor
 
 clone this repo and symlink rally.rb into your path:
 

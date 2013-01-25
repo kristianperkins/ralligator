@@ -4,8 +4,7 @@ require 'optparse'
 require 'yaml'
 require 'rally_rest_api'
 require 'launchy'
-require 'extensions/kernel'
-require 'html2markdown'
+require 'html2md'
 require 'term/ansicolor'
 
 @@message_file = "RALLY_MSG"
@@ -101,8 +100,8 @@ if story
         puts  id_color + '-' * (title.length) + c.reset
         if rally_story.description
             puts c.bold('Description:')
-            desc = HTMLPage.new :contents => rally_story.description
-            print_text(desc.markdown)
+            desc = Html2Md.new(rally_story.description)
+            print_text(desc.parse)
         end
         puts c.bold('Project: ') + rally_story.project.name
         puts c.bold('State: ') + printable_state(rally_story)
