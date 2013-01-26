@@ -93,10 +93,8 @@ end
 if story
     r = connect_to_rally(config['url'], config['username'], config['password'])
     workspace = r.find_all(:workspace).first
-    type = (story.start_with?("US") && :userstory) || :defect
     rally_story = r.find(:artifact, :workspace => workspace) {equal :formatted_i_d, story }.find { |s| s.formatted_i_d == story}
     if action == :display
-        # id_color = type == :defect && c.red || c.blue
         id_color = c.blue
         title =  "#{rally_story.formatted_i_d}: #{rally_story.name}"
         puts id_color + c.bold(title)
@@ -110,27 +108,19 @@ if story
         puts c.bold('State: ') + printable_state(rally_story)
     elsif action == :block
         blocked = rally_story.blocked == "true"
-        # text = prompt_for_text
-        text = "TODO: implement external text editing"
         block_state = blocked && c.cyan("unblocked") || c.red("blocked")
-        if text
-            r.update(rally_story, :blocked => !blocked)
-            puts "#{block_state} #{type.to_s} #{rally_story.formatted_i_d}"
-        else
-            puts "Aborting block change due to empty message"
-            # notes = HTMLPage.new :contents => rally_story.notes
-            # puts notes.markdown
-            # TODO: add/replace message and convert back to html
-        end
+        r.update(rally_story, :blocked => !blocked)
+        puts "#{block_state} #{type.to_s} #{rally_story.formatted_i_d}"
     elsif action == :notes
         text ||= prompt_for_text
         if text
             r.update(rally_story, action => rally_story.send(action.to_s) + "<br>" + text)
             puts "added #{action.to_s}"
         else
-            puts "Aborting block change due to empty message"
+            puts "Aborting block change due to empty #{action.to_s}"
         end
     else
+        type = (story.start_with?("US") && :userstory) || :defect
         url = "#{config['url']}/#/detail/#{type.to_s}/#{rally_story.object_i_d}"
         puts "launching #{url}"
         Launchy.open(url)
