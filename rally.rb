@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'rubygems'
-require 'optparse'
 require 'yaml'
+require 'trollop'
 require 'rally_rest_api'
 require 'launchy'
 require 'html2md'
@@ -9,36 +9,39 @@ require 'term/ansicolor'
 
 @@message_file = "RALLY_MSG"
 
-action = :display
-text = nil
 story = nil
 c = Term::ANSIColor
 config = YAML.load_file(ENV['HOME']+'/.rallyconf.yml')['rally']
 
-parser = OptionParser.new do |o|
-    o.banner = "Usage: rally -[options] [rally id]"
-    o.on('-b', '--block', '(un)block the story/defect') do
-        action = :block
-    end
-    o.on('-n', '--notes', 'append text to notes') do
-        action = :notes
-    end
-    o.on('-l', '--launch', 'open user story/defect in web browser') do
-        action = :launch
-    end
-    o.on('-s s', '--story s', 'specify the user story number') do |s|
-        story = s.upcase
-    end
-    o.on('-h', '--help', 'Print this help message') do
-        puts o
-        exit
-    end
+SUB_COMMANDS = %w(block notes launch)
+global_opts = Trollop::options do
+    banner <<-EOS
+Usage: rally [options] [command [command-options]]
+Available commands: #{SUB_COMMANDS.join("\n" + (" " * 20))}
+EOS
+    opt :story, "user story number", :type => :string
+    stop_on SUB_COMMANDS
 end
-parser.parse!
+cmd = ARGV.shift # get the subcommand
+action = cmd && cmd.to_sym || :display
+cmd_opts = case cmd
+    when "block"
+        Trollop::options do
+            banner "Block a user story"
+        end
+    when "notes"
+        Trollop::options do
+            banner "Append to the notes section of a story"
+            opt :message, "message to add to notes section", :type => :string
+        end
+    when "launch"
+        Trollop::options do
+            banner "Launch in web browser"
+        end
+end
 
-
-text = ARGV[0]
-
+text = cmd_opts.message if cmd_opts
+story = global_opts.story
 unless story
     # determine story id from the current git branch
     branch = IO.popen("git rev-parse --abbrev-ref HEAD") { |io|  io.first.strip }
@@ -94,6 +97,7 @@ if story
     r = connect_to_rally(config['url'], config['username'], config['password'])
     workspace = r.find_all(:workspace).first
     rally_story = r.find(:artifact, :workspace => workspace) {equal :formatted_i_d, story }.find { |s| s.formatted_i_d == story}
+    type = (story.start_with?("US") && :userstory) || :defect
     if action == :display
         id_color = c.blue
         title =  "#{rally_story.formatted_i_d}: #{rally_story.name}"
@@ -105,6 +109,7 @@ if story
             print_text(desc.parse)
         end
         puts c.bold('Project: ') + rally_story.project.name
+        puts c.bold('Iteration: ') + rally_story.iteration.name
         puts c.bold('State: ') + printable_state(rally_story)
     elsif action == :block
         blocked = rally_story.blocked == "true"
@@ -120,7 +125,6 @@ if story
             puts "Aborting block change due to empty #{action.to_s}"
         end
     else
-        type = (story.start_with?("US") && :userstory) || :defect
         url = "#{config['url']}/#/detail/#{type.to_s}/#{rally_story.object_i_d}"
         puts "launching #{url}"
         Launchy.open(url)
