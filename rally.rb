@@ -13,7 +13,7 @@ story = nil
 c = Term::ANSIColor
 config = YAML.load_file(ENV['HOME']+'/.rallyconf.yml')['rally']
 
-SUB_COMMANDS = %w(block notes launch)
+SUB_COMMANDS = %w(block notes launch workon)
 global_opts = Trollop::options do
     banner <<-EOS
 Usage: rally [options] [command [command-options]]
@@ -37,6 +37,10 @@ cmd_opts = case cmd
     when "launch"
         Trollop::options do
             banner "Launch in web browser"
+        end
+    when "launch"
+        Trollop::options do
+            banner "Creates a task and sets it to In-Progress"
         end
 end
 
@@ -124,6 +128,17 @@ if story
         else
             puts "Aborting block change due to empty #{action.to_s}"
         end
+    elsif action == :workon
+        # r.create(:task, :name =>  ARGV.shift, :work_product => rally_story)
+        task = RestObject.new
+        task.type = :task
+        task.rally_rest = r
+        task.name = ARGV.shift
+        task.estimate = ARGV.shift
+        task.state = "In-Progress"
+        task.work_product = rally_story
+        task.save!
+        puts "Working on: " + task.formatted_i_d
     else
         url = "#{config['url']}/#/detail/#{type.to_s}/#{rally_story.object_i_d}"
         puts "launching #{url}"
