@@ -16,12 +16,13 @@ config = YAML.load_file(ENV['HOME']+'/.rallyconf.yml')['rally']
 SUB_COMMANDS = %w(show block notes launch workon)
 global_opts = Trollop::options do
     banner <<-EOS
-Usage: rally [options] [command [command-options]]
+Usage: rally [-s STORY] <command> [command-options]
 Available commands: #{SUB_COMMANDS.join("\n" + (" " * 20))}
 EOS
     opt :story, "user story number", :type => :string
     stop_on SUB_COMMANDS
 end
+
 cmd = ARGV.shift # get the subcommand
 action = cmd && cmd.to_sym || :show
 cmd_opts = case cmd
@@ -43,14 +44,17 @@ cmd_opts = case cmd
         Trollop::options do
             banner "Launch in web browser"
         end
-    when "launch"
+    when "workon"
         Trollop::options do
             banner "Creates a task and sets it to In-Progress"
         end
+    else
+        Trollop::die "unknown command"
+        exit
 end
 
 text = cmd_opts.message if cmd_opts
-story = global_opts.story.upcase()
+story = global_opts.story
 unless story
     # determine story id from the current git branch
     branch = IO.popen("git rev-parse --abbrev-ref HEAD") { |io|  io.first.strip }
@@ -78,12 +82,12 @@ def print_text(text)
     puts text.gsub(/\n/, "\n\n").gsub(/(.{1,#{line_width}})(\s+|$)/, "\\1\n")
 end
 
-def printable_state(blocked, state)
+def printable_state(blocked, state, amount=4)
     c = Term::ANSIColor
     states = {"D" => "Defined", "P" => "In-Progress", "C" => "Completed", "A" => "Accepted"}
     bg = c.on_green
     state_string = ""
-    ["D", "P", "C", "A"].each do |s|
+    ["D", "P", "C", "A"][0..amount-1].each do |s|
         bg = c.on_red if (blocked == "true" && (states[s] == state))
         state_string += bg + s
         bg = c.reset if (states[s] == state)
@@ -123,7 +127,7 @@ if story
         puts c.bold('State: ') + printable_state(rally_story.blocked, rally_story.schedule_state)
         if cmd_opts && cmd_opts.tasks
             puts c.bold('Tasks: ')
-            rally_story.tasks.each {|task| puts "State: #{printable_state(task.blocked, task.state)} Name: #{task.name}"}
+            rally_story.tasks.each {|task| puts "State: #{printable_state(task.blocked, task.state, 3)} Name: #{task.name}"}
         end
     elsif action == :block
         blocked = rally_story.blocked == "true"
