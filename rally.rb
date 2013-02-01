@@ -13,14 +13,21 @@ story = nil
 c = Term::ANSIColor
 config = YAML.load_file(ENV['HOME']+'/.rallyconf.yml')['rally']
 
-SUB_COMMANDS = %w(show block notes launch workon)
+# SUB_COMMANDS = %w(show block notes launch workon)
+SUB_COMMANDS = { 'show'   => "Display story details",
+                 'block'  => "Block a user story",
+                 'notes'  => "Append to the notes section of a story",
+                 'launch' => "Launch in web browser",
+                 'workon' => "Creates a task and sets it to In-Progress" }
+command_summary = SUB_COMMANDS.map { |k,v| "#{k.ljust(10)} #{v}" }.join("\n" + (" " * 20))
+
 global_opts = Trollop::options do
     banner <<-EOS
 Usage: rally [-s STORY] <command> [command-options]
-Available commands: #{SUB_COMMANDS.join("\n" + (" " * 20))}
+Available commands: #{command_summary}
 EOS
     opt :story, "user story number", :type => :string
-    stop_on SUB_COMMANDS
+    stop_on SUB_COMMANDS.keys
 end
 
 cmd = ARGV.shift # get the subcommand
@@ -28,28 +35,28 @@ action = cmd && cmd.to_sym || :show
 cmd_opts = case cmd
     when "show"
         Trollop::options do
-            banner "Block a user story"
+            banner SUB_COMMANDS['show']
             opt :tasks, "display a list of the tasks for the story", :type => :bool
         end
     when "block"
         Trollop::options do
-            banner "Block a user story"
+            banner SUB_COMMANDS['block']
         end
     when "notes"
         Trollop::options do
-            banner "Append to the notes section of a story"
+            banner SUB_COMMANDS['notes']
             opt :message, "message to add to notes section", :type => :string
         end
     when "launch"
         Trollop::options do
-            banner "Launch in web browser"
+            banner SUB_COMMANDS['launch']
         end
     when "workon"
         Trollop::options do
-            banner "Creates a task and sets it to In-Progress"
+            banner SUB_COMMANDS['workon']
         end
     else
-        Trollop::die "unknown command"
+        Trollop::die "unknown command '#{cmd}'"
         exit
 end
 
@@ -67,9 +74,9 @@ def connect_to_rally(rally_url, username, password)
         baseurl = baseurl.slice(0, baseurl.length-1)
     end
     custom_headers = CustomHttpHeader.new
-    custom_headers.name = 'Rally CRI'
+    custom_headers.name = 'Ralligator'
     custom_headers.version = '0.1'
-    custom_headers.vendor = 'rallycri'
+    custom_headers.vendor = 'ralligator'
     begin
         return  RallyRestAPI.new(:username => username, :password => password, :base_url => baseurl, :http_headers => custom_headers)
     rescue => ex
