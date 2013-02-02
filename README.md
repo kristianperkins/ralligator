@@ -1,7 +1,7 @@
-ralligator
-=========
+Ralligator: Rally for Reptiles
+==============================
 
-Snappy rally CLI workflow that is integrated with git.
+Snappy little rally CLI workflow that is integrated with git.
 
 Installation
 ------------
@@ -25,8 +25,6 @@ your rally URL as well as your username and password, e.g.:
 
 Usage
 -----
-
-    rally [options]
 
 If operating within a git repository the ralligator will attempt to find a
 rally ID in the current git branch name.
