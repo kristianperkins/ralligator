@@ -3,6 +3,42 @@ Ralligator: Rally for Reptiles
 
 Snappy little rally CLI workflow that is integrated with git.
 
+Usage
+-----
+
+    rally [-s STORY] <command>
+
+
+Interface
+---------
+
+:construction: **Under Construction** :construction:
+
+
+***`workon`***
+
+&nbsp;
+&nbsp;
+Mark which story you are working on, (creating and) setting tasks to 'In-Progress' and creates a new branch.
+
+***`show`***
+
+&nbsp;
+&nbsp;
+Displays the current user story details on the command line.
+
+***`notes`***
+
+&nbsp;
+&nbsp;
+Appends notes to the current user story.
+
+***`launch`***
+
+&nbsp;
+&nbsp;
+When all else fails, you can always launch the rally story in a web browser.
+
 Installation
 ------------
 
@@ -22,12 +58,3 @@ your rally URL as well as your username and password, e.g.:
       url: https://trial.rallydev.com/
       username: example@example.com
       password: password
-
-Usage
------
-
-If operating within a git repository the ralligator will attempt to find a
-rally ID in the current git branch name.
-
-Running the command `rally` with no options will print the story details.
-Type `rally --help` for further information.
