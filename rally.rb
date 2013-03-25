@@ -130,11 +130,15 @@ if story
             print_text(desc.parse)
         end
         puts c.bold('Project: ') + rally_story.project.name
-        puts c.bold('Iteration: ') + rally_story.iteration.name
+        puts c.bold('Iteration: ') + (rally_story.iteration && rally_story.iteration.name || 'none')
         puts c.bold('State: ') + printable_state(rally_story.blocked, rally_story.schedule_state)
         if cmd_opts && cmd_opts.tasks
             puts c.bold('Tasks: ')
-            rally_story.tasks.each {|task| puts "State: #{printable_state(task.blocked, task.state, 3)} Name: #{task.name}"}
+            if rally_story.tasks
+                rally_story.tasks.each {|task| puts "State: #{printable_state(task.blocked, task.state, 3)} Name: #{task.name}"}
+            else
+                puts 'No tasks'
+            end
         end
     elsif action == :block
         blocked = rally_story.blocked == "true"
