@@ -158,7 +158,7 @@ if story
     elsif action == :notes
         text ||= prompt_for_text
         if text
-            r.update(rally_story, action => rally_story.send(action.to_s) + "<br>" + text)
+            r.update(rally_story, action => rally_story.send(action.to_s) + "<br>" + text.gsub(/\n/, "<br>"))
             puts "added #{action.to_s}"
         else
             puts "Aborting block change due to empty #{action.to_s}"
