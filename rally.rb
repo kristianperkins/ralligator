@@ -36,6 +36,7 @@ cmd_opts = case cmd
     when "show"
         Trollop::options do
             banner SUB_COMMANDS['show']
+            opt :notes, "display the notes for the story", :type => :bool
             opt :tasks, "display a list of the tasks for the story", :type => :bool
         end
     when "block"
@@ -132,6 +133,15 @@ if story
         puts c.bold('Project: ') + rally_story.project.name
         puts c.bold('Iteration: ') + (rally_story.iteration && rally_story.iteration.name || 'none')
         puts c.bold('State: ') + printable_state(rally_story.blocked, rally_story.schedule_state)
+        if cmd_opts && cmd_opts.notes
+            puts c.bold('Notes: ')
+            if rally_story.notes
+                notes = Html2Md.new(rally_story.notes)
+                print_text(notes.parse)
+            else
+                puts 'No tasks'
+            end
+        end
         if cmd_opts && cmd_opts.tasks
             puts c.bold('Tasks: ')
             if rally_story.tasks
