@@ -46,7 +46,7 @@ Install dependancies:
 
     gem install rally_rest_api launchy html2md term-ansicolor trollop
 
-clone this repo and symlink rally.rb into your path:
+Clone this repo and symlink rally.rb into your path:
 
     git clone git://github.com/krockode/ralligator.git
     ln -s $PWD/ralligator/rally.rb $HOME/bin/rally
