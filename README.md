@@ -44,7 +44,7 @@ Installation
 
 Install dependancies:
 
-    gem install rally_rest_api launchy html2md term-ansicolor trollop
+    gem install rally_rest_api builder launchy html2md nokogiri term-ansicolor trollop
 
 Clone this repo and symlink rally.rb into your path:
 
